@@ -2,8 +2,9 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Sparkles } from 'lucide-react';
+import { ArrowLeft, Save, Sparkles, Volume2 } from 'lucide-react';
 
+import { listVoices } from '@/lib/ai/voices';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +26,17 @@ const TONES = [
 type ToneValue = (typeof TONES)[number]['value'];
 type ScriptStatus = 'draft' | 'generating' | 'ready' | 'error';
 
+interface VoiceState {
+  provider: string;
+  voiceId: string;
+  voiceName: string;
+  audioFormat: string;
+  durationSeconds?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  audioUrl: string;
+}
+
 interface ScriptEditorProps {
   script: {
     id: string;
@@ -36,9 +48,10 @@ interface ScriptEditorProps {
     chapters: number;
     content: string;
     targetWordCount: number;
-  actualWordCount: number;
-  status: ScriptStatus;
-  updatedAt?: Date | string;
+    actualWordCount: number;
+    status: ScriptStatus;
+    updatedAt?: Date | string;
+    voice?: VoiceState | null;
   };
 }
 
@@ -71,6 +84,7 @@ const STATUS_COPY: Record<ScriptStatus, string> = {
 
 export function ScriptEditor({ script }: ScriptEditorProps) {
   const router = useRouter();
+  const voiceOptions = React.useMemo(() => listVoices(), []);
   const [values, setValues] = React.useState({
     topic: script.topic,
     tone: script.tone as ToneValue,
@@ -80,6 +94,12 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
     content: script.content
   });
   const [saving, setSaving] = React.useState(false);
+  const [voiceState, setVoiceState] = React.useState<VoiceState | null>(script.voice ?? null);
+  const [selectedVoice, setSelectedVoice] = React.useState<string>(
+    script.voice?.voiceId ?? voiceOptions[0]?.id ?? ''
+  );
+  const [generatingVoice, setGeneratingVoice] = React.useState(false);
+  const [audioKey, setAudioKey] = React.useState(0);
 
   const liveWordCount = React.useMemo(() => countWords(values.content), [values.content]);
   const liveTarget = React.useMemo(
@@ -90,6 +110,27 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
     liveTarget > 0 ? Math.min(100, Math.round((liveWordCount / liveTarget) * 100)) : 0;
   const wordDelta = liveWordCount - liveTarget;
   const status = script.status;
+
+  React.useEffect(() => {
+    setValues({
+      topic: script.topic,
+      tone: script.tone as ToneValue,
+      style: script.style,
+      lengthMinutes: script.lengthMinutes,
+      chapters: script.chapters,
+      content: script.content
+    });
+    setVoiceState(script.voice ?? null);
+    if (script.voice?.voiceId) {
+      setSelectedVoice(script.voice.voiceId);
+    }
+  }, [script]);
+
+  React.useEffect(() => {
+    if (!selectedVoice && voiceOptions.length > 0) {
+      setSelectedVoice(voiceOptions[0].id);
+    }
+  }, [selectedVoice, voiceOptions]);
 
   const handleChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -146,16 +187,47 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
     }
   };
 
-  React.useEffect(() => {
-    setValues({
-      topic: script.topic,
-      tone: script.tone as ToneValue,
-      style: script.style,
-      lengthMinutes: script.lengthMinutes,
-      chapters: script.chapters,
-      content: script.content
-    });
-  }, [script]);
+  const handleGenerateVoice = async () => {
+    if (!selectedVoice) {
+      toast({
+        title: 'Pick a voice',
+        description: 'Choose a voice before generating audio.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setGeneratingVoice(true);
+    try {
+      const res = await fetch(`/api/scripts/${script.id}/voice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voiceId: selectedVoice })
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? 'Unable to generate voice');
+      }
+
+      const data = await res.json();
+      setVoiceState(data.voice ?? null);
+      setAudioKey(Date.now());
+      toast({
+        title: 'Voice ready',
+        description: 'Audio narration has been generated.'
+      });
+      router.refresh();
+    } catch (error) {
+      toast({
+        title: 'Voice generation failed',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: 'destructive'
+      });
+    } finally {
+      setGeneratingVoice(false);
+    }
+  };
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr),minmax(0,1fr)]">
@@ -289,6 +361,65 @@ export function ScriptEditor({ script }: ScriptEditorProps) {
                   : `About ${Math.abs(wordDelta)} words below target — add a story beat or example.`}
             </p>
           </div>
+        </div>
+
+        <div className="space-y-4 rounded-2xl border bg-background p-6 shadow-sm">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="text-sm font-semibold">Voiceover</p>
+              <p className="text-xs text-muted-foreground">Generate narration with OpenAI voices.</p>
+            </div>
+            <Badge variant={voiceState ? 'secondary' : 'outline'} className="capitalize">
+              {voiceState ? 'Ready' : 'Not generated'}
+            </Badge>
+          </div>
+          <div className="grid gap-2">
+            {voiceOptions.map((voice) => {
+              const active = selectedVoice === voice.id;
+              return (
+                <button
+                  key={voice.id}
+                  type="button"
+                  onClick={() => setSelectedVoice(voice.id)}
+                  className={cn(
+                    'rounded-xl border p-3 text-left transition hover:border-primary/60 hover:bg-primary/5',
+                    active ? 'border-primary bg-primary/10 text-primary-foreground' : 'border-muted'
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium text-foreground">{voice.title}</p>
+                    {active ? <Badge variant="secondary">Selected</Badge> : null}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{voice.description}</p>
+                </button>
+              );
+            })}
+          </div>
+          <Button
+            onClick={handleGenerateVoice}
+            disabled={generatingVoice || !selectedVoice}
+            className="w-full gap-2"
+          >
+            <Volume2 className="h-4 w-4" />
+            {generatingVoice ? 'Generating…' : voiceState ? 'Regenerate voice' : 'Generate voice'}
+          </Button>
+          {voiceState ? (
+            <div className="space-y-2">
+              <audio
+                key={`${voiceState.audioUrl}-${audioKey}`}
+                controls
+                className="w-full"
+                src={voiceState.audioUrl}
+              />
+              <p className="text-xs text-muted-foreground">
+                {voiceState.voiceName} · updated {formatTimeAgo(voiceState.updatedAt)}
+              </p>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Audio preview appears here after generation. You can regenerate anytime — we overwrite the previous track.
+            </p>
+          )}
         </div>
 
         <div className="space-y-3 rounded-2xl border bg-background p-6 shadow-sm">

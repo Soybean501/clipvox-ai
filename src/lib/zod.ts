@@ -40,3 +40,7 @@ export const ScriptUpdateSchema = z
   .refine((data) => Object.keys(data).length > 0, {
     message: 'No changes provided'
   });
+
+export const ScriptVoiceRequestSchema = z.object({
+  voiceId: z.string().min(1, 'Voice selection is required')
+});

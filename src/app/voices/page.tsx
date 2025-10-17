@@ -18,18 +18,23 @@ export default async function VoicesPage() {
       <Card>
         <CardHeader>
           <CardTitle>Voice library</CardTitle>
-          <CardDescription>Preview voices that will power the upcoming TTS pipeline.</CardDescription>
+          <CardDescription>Preview the voices available for instant narration.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           {voices.map((voice) => (
-            <div key={voice.id} className="flex items-center justify-between rounded-md border p-4">
-              <div>
-                <p className="font-medium">{voice.title}</p>
-                <p className="text-xs text-muted-foreground">Voice id: {voice.id}</p>
+            <div key={voice.id} className="rounded-xl border p-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-medium">{voice.title}</p>
+                  <p className="text-xs text-muted-foreground">{voice.description}</p>
+                  <p className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                    Provider: {voice.provider} · Voice id: {voice.id}
+                  </p>
+                </div>
+                {voice.previewUrl ? (
+                  <audio controls className="mt-2 w-full sm:mt-0 sm:w-auto" src={voice.previewUrl} />
+                ) : null}
               </div>
-              <a href={voice.demoUrl} className="text-sm text-primary underline" target="_blank" rel="noreferrer">
-                Demo
-              </a>
             </div>
           ))}
         </CardContent>

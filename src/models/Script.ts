@@ -1,5 +1,16 @@
 import { Schema, model, models, Types, type HydratedDocument, type Model } from 'mongoose';
 
+export interface ScriptVoiceAttributes {
+  provider: 'openai';
+  voiceId: string;
+  voiceName: string;
+  audioFormat: string;
+  audioData: Buffer;
+  durationSeconds?: number | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface ScriptAttributes {
   projectId: Types.ObjectId;
   ownerId: Types.ObjectId;
@@ -16,7 +27,22 @@ export interface ScriptAttributes {
   error: string;
   createdAt: Date;
   updatedAt: Date;
+  voice?: ScriptVoiceAttributes | null;
 }
+
+const ScriptVoiceSchema = new Schema<ScriptVoiceAttributes>(
+  {
+    provider: { type: String, enum: ['openai'], required: true },
+    voiceId: { type: String, required: true },
+    voiceName: { type: String, required: true },
+    audioFormat: { type: String, default: 'audio/mpeg' },
+    audioData: { type: Buffer, required: true },
+    durationSeconds: { type: Number, default: null },
+    createdAt: { type: Date, default: () => new Date() },
+    updatedAt: { type: Date, default: () => new Date() }
+  },
+  { _id: false }
+);
 
 const ScriptSchema = new Schema<ScriptAttributes>({
   projectId: { type: Types.ObjectId, ref: 'Project', index: true, required: true },
@@ -37,7 +63,8 @@ const ScriptSchema = new Schema<ScriptAttributes>({
   status: { type: String, enum: ['draft', 'generating', 'ready', 'error'], default: 'draft' },
   error: { type: String, default: '' },
   createdAt: { type: Date, default: () => new Date() },
-  updatedAt: { type: Date, default: () => new Date() }
+  updatedAt: { type: Date, default: () => new Date() },
+  voice: { type: ScriptVoiceSchema, default: null }
 });
 
 ScriptSchema.pre('save', function save(next) {

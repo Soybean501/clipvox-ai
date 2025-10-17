@@ -18,6 +18,18 @@ type ScriptLike = ScriptDocument | ScriptLean;
 function serializeScript(script: ScriptLike) {
   const source: ScriptLean =
     'toObject' in script ? (script.toObject() as ScriptLean) : script;
+  const voice = source.voice
+    ? {
+        provider: source.voice.provider,
+        voiceId: source.voice.voiceId,
+        voiceName: source.voice.voiceName,
+        audioFormat: source.voice.audioFormat,
+        durationSeconds: source.voice.durationSeconds ?? undefined,
+        createdAt: source.voice.createdAt,
+        updatedAt: source.voice.updatedAt,
+        audioUrl: `/api/scripts/${source._id.toString()}/voice/audio?ts=${source.voice.updatedAt?.getTime() ?? Date.now()}`
+      }
+    : null;
   return {
     id: source._id.toString(),
     projectId: source.projectId.toString(),
@@ -34,7 +46,8 @@ function serializeScript(script: ScriptLike) {
     status: source.status,
     error: source.error,
     createdAt: source.createdAt,
-    updatedAt: source.updatedAt
+    updatedAt: source.updatedAt,
+    voice
   };
 }
 

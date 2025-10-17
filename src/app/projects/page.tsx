@@ -25,10 +25,17 @@ interface ProjectOverviewItem {
     tone: ScriptLean['tone'];
     style: string;
     lengthMinutes: number;
+    chapters: number;
     targetWordCount: number;
     actualWordCount: number;
     createdAt: string;
     updatedAt: string;
+    voice?: {
+      voiceId: string;
+      voiceName: string;
+      updatedAt: string;
+      audioUrl: string;
+    };
   };
 }
 
@@ -70,7 +77,16 @@ async function fetchProjects(ownerId: string): Promise<ProjectOverviewItem[]> {
             targetWordCount: script.targetWordCount,
             actualWordCount: script.actualWordCount,
             createdAt: toISO(script.createdAt),
-            updatedAt: toISO(script.updatedAt)
+            updatedAt: toISO(script.updatedAt),
+            voice:
+              script.voice && script.voice.voiceId
+                ? {
+                    voiceId: script.voice.voiceId,
+                    voiceName: script.voice.voiceName,
+                    updatedAt: toISO(script.voice.updatedAt),
+                    audioUrl: `/api/scripts/${script._id.toString()}/voice/audio?ts=${script.voice.updatedAt?.getTime() ?? Date.now()}`
+                  }
+                : undefined
           }
         : undefined
     };

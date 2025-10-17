@@ -48,6 +48,20 @@ export default async function ScriptDetailPage({ params }: { params: ScriptPageP
     notFound();
   }
 
+  const voice =
+    script.voice && script.voice.voiceId
+      ? {
+          provider: script.voice.provider,
+          voiceId: script.voice.voiceId,
+          voiceName: script.voice.voiceName,
+          audioFormat: script.voice.audioFormat,
+          durationSeconds: script.voice.durationSeconds ?? undefined,
+          createdAt: script.voice.createdAt?.toISOString(),
+          updatedAt: script.voice.updatedAt?.toISOString(),
+          audioUrl: `/api/scripts/${script._id.toString()}/voice/audio?ts=${script.voice.updatedAt?.getTime() ?? Date.now()}`
+        }
+      : null;
+
   const editorScript = {
     id: script._id.toString(),
     projectId: script.projectId.toString(),
@@ -60,7 +74,8 @@ export default async function ScriptDetailPage({ params }: { params: ScriptPageP
     targetWordCount: script.targetWordCount,
     actualWordCount: script.actualWordCount,
     status: script.status,
-    updatedAt: script.updatedAt
+    updatedAt: script.updatedAt,
+    voice
   };
 
   return (

@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { CalendarClock, Edit3, FileText, MoreHorizontal, Sparkles, Trash2 } from 'lucide-react';
+import { CalendarClock, Edit3, FileText, MoreHorizontal, Sparkles, Trash2, Volume2 } from 'lucide-react';
 
 import { ProjectForm } from '@/components/forms/project-form';
 import { Badge } from '@/components/ui/badge';
@@ -45,6 +45,12 @@ interface ProjectTableItem {
     actualWordCount: number;
     createdAt: string;
     updatedAt: string;
+    voice?: {
+      voiceId: string;
+      voiceName: string;
+      updatedAt: string;
+      audioUrl: string;
+    };
   };
 }
 
@@ -255,6 +261,12 @@ export function ProjectsTable({ projects }: ProjectsTableProps) {
                               style={{ width: `${completion}%` }}
                             />
                           </div>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />
+                          {script.voice
+                            ? `Voice ready — ${script.voice.voiceName} · ${formatTimeAgo(script.voice.updatedAt)}`
+                            : 'Voiceover not generated yet'}
                         </div>
                       </div>
                     ) : (

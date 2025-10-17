@@ -1,6 +1,6 @@
 # ClipVox
 
-ClipVox is a Next.js 14 App Router application that helps teams generate narration-ready scripts tailored to their projects. This MVP covers secure authentication, project & script management, OpenAI-powered script generation, and the groundwork for future audio/video workflows.
+ClipVox is a Next.js 14 App Router application that helps teams generate narration-ready scripts tailored to their projects. This MVP covers secure authentication, project & script management, OpenAI-powered script generation, instant voiceovers, and the groundwork for future audio/video workflows.
 
 ## Quick start
 
@@ -28,6 +28,7 @@ ClipVox is a Next.js 14 App Router application that helps teams generate narrati
 | `NEXTAUTH_URL`     | ✅       | Base URL of the app (`http://localhost:3000` in dev, Vercel URL in prod). |
 | `OPENAI_API_KEY`   | ✅       | OpenAI key with access to GPT-4.1 mini (or better). |
 | `OPENAI_MODEL`     | ✅       | Defaults to `gpt-4.1-mini`; override if needed. |
+| `OPENAI_TTS_MODEL` | ✅       | Defaults to `gpt-4o-mini-tts`; choose another OpenAI voice model if preferred. |
 | `REDIS_URL`        | ⏭️       | Placeholder for the future BullMQ queue workers. |
 
 ### Getting an OpenAI API key
@@ -60,7 +61,7 @@ ClipVox is a Next.js 14 App Router application that helps teams generate narrati
 - **Framework**: Next.js 14 App Router with TypeScript and server components. Client components lean on Zustand-free patterns unless local state is required.
 - **Auth**: NextAuth Credentials provider + MongoDBAdapter. Sessions are JWT-based; `session.user.id` is populated for ownership checks.
 - **Database**: MongoDB via Mongoose with cached connections to support hot reload.
-- **LLM integration**: OpenAI Chat Completions orchestrated in `lib/ai/scriptPlanner.ts`, enforcing tone, chapter headings, and word-count targets.
+- **LLM integration**: OpenAI Chat Completions orchestrated in `lib/ai/scriptPlanner.ts`, enforcing tone, chapter headings, and word-count targets. Voiceovers are generated through the OpenAI TTS API (`lib/ai/text-to-speech.ts`).
 - **Validation & logging**: Zod schemas guard API payloads; Pino captures structured logs.
 - **UI**: TailwindCSS with shadcn/ui primitives for buttons, dialogs, tables, toasts, and form inputs.
 - **Rate limiting**: Simple in-memory limiter (5 script generations per minute per user) to avoid accidental API storms.
@@ -86,7 +87,7 @@ _Note_: The in-memory rate limiter is suitable for single-instance deployments. 
 
 ## Roadmap
 
-1. **Text-to-Speech (TTS)**: Integrate ElevenLabs/OpenAI TTS via BullMQ workers, leveraging the `queue` interface stub. Store audio artifacts alongside scripts.
+1. **Text-to-Speech (TTS)**: Expand voice support with queue workers, fallback providers (ElevenLabs/Google), and cloud media storage.
 2. **Video pipeline**: Introduce FFmpeg-powered render workers, timeline editing, and S3-backed media assets. Extend project/script models with waveform, clip, and overlay metadata.
 3. **Workflow automation**: Background jobs for script approvals, VoD packaging, and status notifications.
 4. **Team collaboration**: Shared projects, role-based access, and activity feeds.
@@ -96,6 +97,7 @@ _Note_: The in-memory rate limiter is suitable for single-instance deployments. 
 - [x] Credentials-based sign-up/sign-in with session redirects.
 - [x] CRUD for projects with ownership enforcement.
 - [x] CRUD + OpenAI generation for scripts, including word-count deltas.
+- [x] One-click voiceover generation with configurable voices and inline playback.
 - [x] Rate limiting on script generation requests.
 - [x] Shared Zod validation and clean, typed code.
 - [x] README, `.env.example`, lint/test commands, and starter tests.
