@@ -81,6 +81,20 @@ export async function POST(req: Request) {
       throw new HttpError(404, 'Project not found');
     }
 
+    const existingScript = await Script.findOne({ projectId, ownerId: user.id });
+    if (existingScript) {
+      return NextResponse.json(
+        {
+          error: 'A script already exists for this project.',
+          script: serializeScript(existingScript)
+        },
+        {
+          status: 409,
+          statusText: 'Script already exists for this project'
+        }
+      );
+    }
+
     const targetWordCount = targetWords(lengthMinutes, tone, style);
     const script = await Script.create({
       ownerId: user.id,

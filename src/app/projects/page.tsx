@@ -5,20 +5,76 @@ import { ProjectsTable } from '@/components/tables/projects-table';
 import { auth } from '@/lib/auth';
 import connectDB from '@/lib/db';
 import Project from '@/models/Project';
+import type { ProjectLean } from '@/models/Project';
+import Script from '@/models/Script';
+import type { ScriptLean } from '@/models/Script';
 
 import { CreateProjectDialog } from './create-project-dialog';
 
-async function fetchProjects(ownerId: string) {
+interface ProjectOverviewItem {
+  id: string;
+  title: string;
+  description: string;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+  script?: {
+    id: string;
+    topic: string;
+    status: ScriptLean['status'];
+    tone: ScriptLean['tone'];
+    style: string;
+    lengthMinutes: number;
+    targetWordCount: number;
+    actualWordCount: number;
+    createdAt: string;
+    updatedAt: string;
+  };
+}
+
+function toISO(date: Date | undefined): string {
+  return (date ?? new Date()).toISOString();
+}
+
+async function fetchProjects(ownerId: string): Promise<ProjectOverviewItem[]> {
   await connectDB();
-  const projects = await Project.find({ ownerId }).sort({ updatedAt: -1 }).lean();
-  return projects.map((project) => ({
-    id: project._id.toString(),
-    title: project.title,
-    description: project.description,
-    tags: project.tags,
-    createdAt: project.createdAt.toISOString(),
-    updatedAt: project.updatedAt.toISOString()
-  }));
+  const projects = await Project.find({ ownerId }).sort({ updatedAt: -1 }).lean<ProjectLean[]>();
+  if (projects.length === 0) {
+    return [];
+  }
+
+  const projectIds = projects.map((project) => project._id);
+  const scripts = await Script.find({ ownerId, projectId: { $in: projectIds } }).lean<ScriptLean[]>();
+  const scriptMap = new Map<string, ScriptLean>(
+    scripts.map((script) => [script.projectId.toString(), script])
+  );
+
+  return projects.map((project) => {
+    const script = scriptMap.get(project._id.toString());
+    return {
+      id: project._id.toString(),
+      title: project.title,
+      description: project.description,
+      tags: project.tags,
+      createdAt: toISO(project.createdAt),
+      updatedAt: toISO(project.updatedAt),
+      script: script
+        ? {
+            id: script._id.toString(),
+            topic: script.topic,
+            status: script.status,
+            tone: script.tone,
+            style: script.style,
+            lengthMinutes: script.lengthMinutes,
+            chapters: script.chapters,
+            targetWordCount: script.targetWordCount,
+            actualWordCount: script.actualWordCount,
+            createdAt: toISO(script.createdAt),
+            updatedAt: toISO(script.updatedAt)
+          }
+        : undefined
+    };
+  });
 }
 
 export default async function ProjectsPage() {
