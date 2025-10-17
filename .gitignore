@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+.next/
+out/
+*.log
+
+# Env files
+.env.local
+.env.production
+.env.development
+.env.test
+
+# Testing artifacts
+coverage/
+*.lcov
+
+# OS/editor cruft
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# TypeScript
+*.tsbuildinfo
+
+# Generated files
+.next-env.d.ts
