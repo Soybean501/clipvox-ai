@@ -9,27 +9,32 @@ import { ScriptCreateSchema } from '@/lib/zod';
 import { generateScript } from '@/lib/ai/scriptPlanner';
 import Project from '@/models/Project';
 import Script from '@/models/Script';
+import type { ScriptDocument, ScriptLean } from '@/models/Script';
 
 const RATE_LIMIT = { limit: 5, windowMs: 60_000 };
 
-function serializeScript(script: any) {
+type ScriptLike = ScriptDocument | ScriptLean;
+
+function serializeScript(script: ScriptLike) {
+  const source: ScriptLean =
+    'toObject' in script ? (script.toObject() as ScriptLean) : script;
   return {
-    id: script._id.toString(),
-    projectId: script.projectId.toString(),
-    ownerId: script.ownerId.toString(),
-    topic: script.topic,
-    tone: script.tone,
-    style: script.style,
-    lengthMinutes: script.lengthMinutes,
-    chapters: script.chapters,
-    outline: script.outline,
-    content: script.content,
-    targetWordCount: script.targetWordCount,
-    actualWordCount: script.actualWordCount,
-    status: script.status,
-    error: script.error,
-    createdAt: script.createdAt,
-    updatedAt: script.updatedAt
+    id: source._id.toString(),
+    projectId: source.projectId.toString(),
+    ownerId: source.ownerId.toString(),
+    topic: source.topic,
+    tone: source.tone,
+    style: source.style,
+    lengthMinutes: source.lengthMinutes,
+    chapters: source.chapters,
+    outline: source.outline,
+    content: source.content,
+    targetWordCount: source.targetWordCount,
+    actualWordCount: source.actualWordCount,
+    status: source.status,
+    error: source.error,
+    createdAt: source.createdAt,
+    updatedAt: source.updatedAt
   };
 }
 
@@ -46,7 +51,7 @@ export async function GET(req: Request) {
     await connectDB();
     const scripts = await Script.find({ projectId, ownerId: user.id })
       .sort({ updatedAt: -1 })
-      .lean();
+      .lean<ScriptLean[]>();
 
     return NextResponse.json(scripts.map(serializeScript));
   } catch (error) {

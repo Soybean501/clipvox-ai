@@ -2,13 +2,8 @@
 
 import * as React from 'react';
 
-import {
-  Toast,
-  ToastActionElement,
-  ToastProps,
-  ToastProvider,
-  ToastViewport
-} from './toast';
+import { Toast, ToastProvider, ToastViewport } from './toast';
+import type { ToastActionElement, ToastProps } from './toast';
 
 type ToasterToast = ToastProps & {
   id: string;
@@ -20,30 +15,21 @@ type ToasterToast = ToastProps & {
 const TOAST_LIMIT = 20;
 const TOAST_REMOVE_DELAY = 1000;
 
-const actionTypes = {
-  ADD_TOAST: 'ADD_TOAST',
-  UPDATE_TOAST: 'UPDATE_TOAST',
-  DISMISS_TOAST: 'DISMISS_TOAST',
-  REMOVE_TOAST: 'REMOVE_TOAST'
-} as const;
-
-type ActionType = typeof actionTypes;
-
 type Action =
   | {
-      type: ActionType['ADD_TOAST'];
+      type: 'ADD_TOAST';
       toast: ToasterToast;
     }
   | {
-      type: ActionType['UPDATE_TOAST'];
+      type: 'UPDATE_TOAST';
       toast: Partial<ToasterToast>;
     }
   | {
-      type: ActionType['DISMISS_TOAST'];
+      type: 'DISMISS_TOAST';
       toastId?: ToasterToast['id'];
     }
   | {
-      type: ActionType['REMOVE_TOAST'];
+      type: 'REMOVE_TOAST';
       toastId?: ToasterToast['id'];
     };
 
@@ -109,7 +95,7 @@ function dispatch(action: Action) {
 }
 
 export function toast({ ...props }: Omit<ToasterToast, 'id'>) {
-  const id = crypto.randomUUID();
+  const id = Math.random().toString(36).slice(2, 10);
   const update = (props: Partial<ToasterToast>) => dispatch({ type: 'UPDATE_TOAST', toast: { ...props, id } });
   const dismiss = () => dispatch({ type: 'DISMISS_TOAST', toastId: id });
 
@@ -164,5 +150,3 @@ export function Toaster() {
     </ToastProvider>
   );
 }
-
-export { Toaster };

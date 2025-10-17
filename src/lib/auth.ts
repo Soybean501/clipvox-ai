@@ -3,9 +3,10 @@ import bcrypt from 'bcryptjs';
 import NextAuth, { type NextAuthConfig } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 
+import User from '@/models/User';
+
 import connectDB from './db';
 import clientPromise from './mongodb';
-import User from '@/models/User';
 
 export const authConfig: NextAuthConfig = {
   adapter: MongoDBAdapter(clientPromise),

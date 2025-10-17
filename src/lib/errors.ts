@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+
 import { logger } from './logger';
 
 export class HttpError extends Error {

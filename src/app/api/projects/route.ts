@@ -5,15 +5,20 @@ import connectDB from '@/lib/db';
 import { HttpError, toErrorResponse } from '@/lib/errors';
 import { ProjectCreateSchema } from '@/lib/zod';
 import Project from '@/models/Project';
+import type { ProjectDocument, ProjectLean } from '@/models/Project';
 
-function serializeProject(project: any) {
+type ProjectLike = ProjectDocument | ProjectLean;
+
+function serializeProject(project: ProjectLike) {
+  const source: ProjectLean =
+    'toObject' in project ? (project.toObject() as ProjectLean) : project;
   return {
-    id: project._id.toString(),
-    title: project.title,
-    description: project.description,
-    tags: project.tags,
-    createdAt: project.createdAt,
-    updatedAt: project.updatedAt
+    id: source._id.toString(),
+    title: source.title,
+    description: source.description,
+    tags: source.tags,
+    createdAt: source.createdAt,
+    updatedAt: source.updatedAt
   };
 }
 
@@ -21,7 +26,7 @@ export async function GET() {
   try {
     const user = await requireUser();
     await connectDB();
-    const projects = await Project.find({ ownerId: user.id }).sort({ updatedAt: -1 }).lean();
+    const projects = await Project.find({ ownerId: user.id }).sort({ updatedAt: -1 }).lean<ProjectLean[]>();
     return NextResponse.json(projects.map(serializeProject));
   } catch (error) {
     return toErrorResponse(error);

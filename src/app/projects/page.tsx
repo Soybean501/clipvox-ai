@@ -2,10 +2,11 @@ import { redirect } from 'next/navigation';
 
 import { AppShell } from '@/components/layouts/app-shell';
 import { ProjectsTable } from '@/components/tables/projects-table';
-import { CreateProjectDialog } from './create-project-dialog';
-import connectDB from '@/lib/db';
 import { auth } from '@/lib/auth';
+import connectDB from '@/lib/db';
 import Project from '@/models/Project';
+
+import { CreateProjectDialog } from './create-project-dialog';
 
 async function fetchProjects(ownerId: string) {
   await connectDB();

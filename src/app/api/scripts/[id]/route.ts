@@ -6,26 +6,31 @@ import connectDB from '@/lib/db';
 import { HttpError, toErrorResponse } from '@/lib/errors';
 import { ScriptUpdateSchema } from '@/lib/zod';
 import Script from '@/models/Script';
+import type { ScriptDocument, ScriptLean } from '@/models/Script';
 import { countWords, targetWords } from '@/lib/utils/wpm';
 
-function serialize(script: any) {
+type ScriptLike = ScriptDocument | ScriptLean;
+
+function serialize(script: ScriptLike) {
+  const source: ScriptLean =
+    'toObject' in script ? (script.toObject() as ScriptLean) : script;
   return {
-    id: script._id.toString(),
-    projectId: script.projectId.toString(),
-    ownerId: script.ownerId.toString(),
-    topic: script.topic,
-    tone: script.tone,
-    style: script.style,
-    lengthMinutes: script.lengthMinutes,
-    chapters: script.chapters,
-    outline: script.outline,
-    content: script.content,
-    targetWordCount: script.targetWordCount,
-    actualWordCount: script.actualWordCount,
-    status: script.status,
-    error: script.error,
-    createdAt: script.createdAt,
-    updatedAt: script.updatedAt
+    id: source._id.toString(),
+    projectId: source.projectId.toString(),
+    ownerId: source.ownerId.toString(),
+    topic: source.topic,
+    tone: source.tone,
+    style: source.style,
+    lengthMinutes: source.lengthMinutes,
+    chapters: source.chapters,
+    outline: source.outline,
+    content: source.content,
+    targetWordCount: source.targetWordCount,
+    actualWordCount: source.actualWordCount,
+    status: source.status,
+    error: source.error,
+    createdAt: source.createdAt,
+    updatedAt: source.updatedAt
   };
 }
 
@@ -36,7 +41,7 @@ function extractOutline(content: string) {
     .map((line) => line.replace(/^#\s*/, '').trim());
 }
 
-async function findScript(id: string, ownerId: string) {
+async function findScript(id: string, ownerId: string): Promise<ScriptDocument> {
   if (!Types.ObjectId.isValid(id)) {
     throw new HttpError(404, 'Script not found');
   }

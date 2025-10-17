@@ -6,9 +6,19 @@ import connectDB from '@/lib/db';
 import { HttpError, toErrorResponse } from '@/lib/errors';
 import { ProjectUpdateSchema } from '@/lib/zod';
 import Project from '@/models/Project';
+import type { ProjectLean } from '@/models/Project';
 import Script from '@/models/Script';
 
-function serialize(project: any) {
+type SerializedProject = {
+  id: string;
+  title: string;
+  description: string;
+  tags: string[];
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+function serialize(project: ProjectLean): SerializedProject {
   return {
     id: project._id.toString(),
     title: project.title,
@@ -19,12 +29,12 @@ function serialize(project: any) {
   };
 }
 
-async function findProject(id: string, ownerId: string) {
+async function findProject(id: string, ownerId: string): Promise<ProjectLean> {
   if (!Types.ObjectId.isValid(id)) {
     throw new HttpError(404, 'Project not found');
   }
   await connectDB();
-  const project = await Project.findOne({ _id: id, ownerId }).lean();
+  const project = await Project.findOne({ _id: id, ownerId }).lean<ProjectLean>();
   if (!project) {
     throw new HttpError(404, 'Project not found');
   }
@@ -56,7 +66,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       { _id: params.id, ownerId: user.id },
       { ...parsed.data, updatedAt: new Date() },
       { new: true }
-    ).lean();
+    ).lean<ProjectLean | null>();
 
     if (!project) {
       throw new HttpError(404, 'Project not found');

@@ -1,6 +1,24 @@
-import { Schema, model, models, Types } from 'mongoose';
+import { Schema, model, models, Types, type HydratedDocument, type Model } from 'mongoose';
 
-const ScriptSchema = new Schema({
+export interface ScriptAttributes {
+  projectId: Types.ObjectId;
+  ownerId: Types.ObjectId;
+  topic: string;
+  tone: 'educational' | 'bedtime' | 'documentary' | 'conversational' | 'dramatic' | 'custom';
+  style: string;
+  lengthMinutes: number;
+  chapters: number;
+  outline: string[];
+  content: string;
+  targetWordCount: number;
+  actualWordCount: number;
+  status: 'draft' | 'generating' | 'ready' | 'error';
+  error: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const ScriptSchema = new Schema<ScriptAttributes>({
   projectId: { type: Types.ObjectId, ref: 'Project', index: true, required: true },
   ownerId: { type: Types.ObjectId, ref: 'User', index: true, required: true },
   topic: { type: String, required: true },
@@ -29,6 +47,10 @@ ScriptSchema.pre('save', function save(next) {
 
 // TODO: Store pointers to generated audio/video assets in future releases.
 
-const Script = models.Script || model('Script', ScriptSchema);
+export type ScriptDocument = HydratedDocument<ScriptAttributes>;
+export type ScriptLean = ScriptAttributes & { _id: Types.ObjectId };
+
+const Script =
+  (models.Script as Model<ScriptAttributes> | undefined) || model<ScriptAttributes>('Script', ScriptSchema);
 
 export default Script;
